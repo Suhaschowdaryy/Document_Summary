@@ -46,42 +46,14 @@ type SummaryResult = {
   isExample?: boolean;
 };
 
-const exampleResult: SummaryResult = {
-  id: 'example-flexible-work',
-  title: 'The future of flexible work',
-  sourceType: 'pdf',
-  meta: '3 pages · 1.8 MB · PDF',
-  summary: {
-    short:
-      'Flexible work is settling into a deliberate hybrid model: teams do their best focused work asynchronously, then use in-person time for trust, decisions, and creative momentum.',
-    medium:
-      'Flexible work is settling into a deliberate hybrid model rather than a simple choice between home and office. The strongest teams protect asynchronous focus time, make collaboration visible, and use in-person moments for trust, decisions, and creative momentum. The shift asks leaders to design for outcomes and clarity, not presence.',
-    long:
-      'The paper argues that flexible work is not a temporary perk or a binary choice between a home office and a company office. It is a design challenge. High-performing teams separate deep, individual work from the moments that benefit from being together. They document decisions, default to asynchronous communication, and use in-person gatherings for trust-building, creative problem solving, and the difficult conversations that do not travel well through a screen. This puts a higher bar on leadership: success is measured by shared context and meaningful outcomes rather than visible activity.',
-  },
-  points: [
-    'Hybrid work works best when teams are explicit about which work needs presence and which work needs uninterrupted focus.',
-    'Asynchronous habits such as written decisions and clear ownership reduce meeting load without reducing alignment.',
-    'Office time has more value when it is reserved for trust, creative collisions, and conversations with emotional nuance.',
-    'Leaders need to manage for outcomes and shared context instead of treating visibility as a proxy for contribution.',
-  ],
-  suggestions: [
-    'Turn the paper’s argument into a one-page team working agreement.',
-    'Ask your team to label upcoming work as focus, collaboration, or connection before planning the next week.',
-  ],
-  extractedText:
-    'Flexible work is becoming a more intentional operating model. Teams that protect deep work, document decisions, and reserve in-person time for trust and creativity are better positioned to adapt.',
-  isExample: true,
-};
-
 function readRecent(): SummaryResult[] {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === null) return [exampleResult];
+    if (saved === null) return [];
     const parsed = JSON.parse(saved) as SummaryResult[];
-    return Array.isArray(parsed) ? parsed : [exampleResult];
+    return Array.isArray(parsed) ? parsed.filter((item) => !item.isExample) : [];
   } catch {
-    return [exampleResult];
+    return [];
   }
 }
 
@@ -190,7 +162,6 @@ function UploadPanel({
   status,
   error,
   onFile,
-  onExample,
   recent,
   onSelectRecent,
   onDeleteRecent,
@@ -199,7 +170,6 @@ function UploadPanel({
   status: AppStatus;
   error: string;
   onFile: (file: File) => void;
-  onExample: () => void;
   recent: SummaryResult[];
   onSelectRecent: (item: SummaryResult) => void;
   onDeleteRecent: (id: string) => void;
@@ -273,7 +243,6 @@ function UploadPanel({
         ) : (
           <div className="empty-recent" data-testid="empty-recent-documents">Your saved briefs will appear here.</div>
         )}
-        {!recent.some((item) => item.isExample) && <button className="example-button" style={{ marginTop: 12 }} onClick={onExample} data-testid="button-load-example">Preview an example</button>}
       </div>
     </section>
   );
@@ -284,7 +253,6 @@ function ResultPanel({
   result,
   length,
   onLength,
-  onExample,
   copied,
   onCopy,
   onDownload,
@@ -293,7 +261,6 @@ function ResultPanel({
   result: SummaryResult | null;
   length: SummaryLength;
   onLength: (length: SummaryLength) => void;
-  onExample: () => void;
   copied: boolean;
   onCopy: () => void;
   onDownload: () => void;
@@ -316,7 +283,6 @@ function ResultPanel({
           <div className="empty-result-art"><FileCheck2 size={29} /></div>
           <h2>Your brief will land here</h2>
           <p>Upload a document and we’ll shape the important parts into a concise, usable readout.</p>
-          <button className="example-button" onClick={onExample} data-testid="button-empty-example">See the example brief <ChevronRight size={13} style={{ verticalAlign: 'middle' }} /></button>
         </div>
       </section>
     );
@@ -369,8 +335,8 @@ function ResultPanel({
 }
 
 function Home() {
-  const [status, setStatus] = useState<AppStatus>('ready');
-  const [result, setResult] = useState<SummaryResult | null>(exampleResult);
+  const [status, setStatus] = useState<AppStatus>('empty');
+  const [result, setResult] = useState<SummaryResult | null>(null);
   const [length, setLength] = useState<SummaryLength>('medium');
   const [recent, setRecent] = useState<SummaryResult[]>(readRecent);
   const [error, setError] = useState('');
@@ -382,14 +348,6 @@ function Home() {
     const timeout = window.setTimeout(() => setNotice(''), 2400);
     return () => window.clearTimeout(timeout);
   }, [notice]);
-
-  const loadExample = () => {
-    setResult(exampleResult);
-    setStatus('ready');
-    setError('');
-    setLength('medium');
-    setNotice('Example brief loaded');
-  };
 
   const handleFile = async (file: File) => {
     const type = fileKind(file);
@@ -493,8 +451,8 @@ function Home() {
             <button className="new-button" onClick={startNew} data-testid="button-new-summary"><Plus size={15} /> New summary</button>
           </div>
           <div className="workspace">
-            <UploadPanel status={status} error={error} onFile={handleFile} onExample={loadExample} recent={recent} onSelectRecent={selectRecent} onDeleteRecent={deleteRecent} onClearRecent={clearRecent} />
-            <ResultPanel status={status} result={result} length={length} onLength={setLength} onExample={loadExample} copied={copied} onCopy={copyBrief} onDownload={downloadBrief} />
+            <UploadPanel status={status} error={error} onFile={handleFile} recent={recent} onSelectRecent={selectRecent} onDeleteRecent={deleteRecent} onClearRecent={clearRecent} />
+            <ResultPanel status={status} result={result} length={length} onLength={setLength} copied={copied} onCopy={copyBrief} onDownload={downloadBrief} />
           </div>
           <div className="footer-note"><LockKeyhole size={12} /> No accounts. No uploads. Just a clearer read.</div>
         </div>
