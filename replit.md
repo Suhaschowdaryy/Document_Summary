@@ -1,6 +1,6 @@
-# [Project name]
+# Briefly — Document Summary Assistant
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Briefly lets users privately turn PDFs and images into concise summaries, key points, and practical next steps in the browser.
 
 ## Run & Operate
 
@@ -22,15 +22,22 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/document-summary-assistant/src/App.tsx` — main application experience and local document processing.
+- `artifacts/document-summary-assistant/src/index.css` — visual theme and responsive layout.
+- `artifacts/document-summary-assistant/README.md` — setup, approach, and submission notes.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Document processing stays local to the browser so source files never leave the device.
+- The first version is frontend-only; it does not depend on credentials, a database, or an external AI provider.
+- Local storage is used only for recent-document metadata and generated briefs.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Drag-and-drop or file-picker uploads for PDFs and common image formats.
+- Loading, unsupported-file, no-text, and OCR-availability states.
+- Short, medium, and long summaries with key points and improvement suggestions.
+- Copy, text download, recent-document reopen, delete, and clear-all actions.
 
 ## User preferences
 
