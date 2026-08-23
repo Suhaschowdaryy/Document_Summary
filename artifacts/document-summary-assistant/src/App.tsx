@@ -31,7 +31,7 @@ const queryClient = new QueryClient();
 const STORAGE_KEY = 'document-summary-assistant.recent';
 
 type SummaryLength = 'short' | 'medium' | 'long';
-type SourceType = 'pdf' | 'image';
+type SourceType = 'pdf' | 'image' | 'word' | 'excel' | 'csv';
 type AppStatus = 'empty' | 'processing' | 'ready' | 'error';
 
 type SummaryResult = {
@@ -67,6 +67,9 @@ function makeId() {
 
 function fileKind(file: File): SourceType | null {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'pdf';
+  if (file.type.includes('word') || /\.(doc|docx)$/i.test(file.name)) return 'word';
+  if (file.type.includes('spreadsheet') || /\.(xls|xlsx)$/i.test(file.name)) return 'excel';
+  if (file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv')) return 'csv';
   if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|tiff?)$/i.test(file.name)) return 'image';
   return null;
 }
@@ -152,7 +155,7 @@ function Sidebar({ onNew }: { onNew: () => void }) {
       <div className="sidebar-spacer" />
       <div className="privacy-note">
         <strong>Private by default</strong>
-        Your files stay in this browser. Nothing is uploaded or stored on a server.
+        Your files are sent securely to Gemini for analysis and are not stored by this app.
       </div>
     </aside>
   );
@@ -201,7 +204,7 @@ function UploadPanel({
           <div className="processing-line"><strong>Reading your document</strong><span>working…</span></div>
           <div className="progress-track"><div className="progress-bar" /></div>
           <div className="processing-steps"><span className="done"><Check size={12} /> File ready</span><span>Extracting text</span></div>
-          <div className="ocr-note"><ScanLine size={14} /> Image text is checked locally first. If OCR is unavailable, we’ll give you a clear fallback.</div>
+          <div className="ocr-note"><ScanLine size={14} /> Gemini will use OCR for scanned pages and images.</div>
         </div>
       ) : (
         <div
@@ -213,15 +216,15 @@ function UploadPanel({
           data-testid="dropzone-document"
         >
           <div className="upload-icon"><UploadCloud size={22} /></div>
-          <p className="drop-title">Drop a PDF or image here</p>
-          <p className="drop-copy">Turn a dense read into a clear brief, without leaving your browser.</p>
+           <p className="drop-title">Drop a document here</p>
+          <p className="drop-copy">Turn a dense read into a clear brief with Gemini.</p>
           <button className="browse-button" onClick={() => inputRef.current?.click()} data-testid="button-browse-files">Browse files</button>
-          <input ref={inputRef} className="file-input" type="file" accept=".pdf,image/png,image/jpeg,image/webp,image/gif" onChange={handleInput} data-testid="input-document-file" />
-          <div className="accepted">PDF · PNG · JPG · WEBP</div>
+           <input ref={inputRef} className="file-input" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,image/png,image/jpeg,image/webp,image/gif,image/tiff" onChange={handleInput} data-testid="input-document-file" />
+           <div className="accepted">PDF · WORD · EXCEL · CSV · IMAGE</div>
         </div>
       )}
       {error && <div className="error-note" role="alert" data-testid="status-upload-error"><X size={14} /> {error}</div>}
-      <div className="privacy-strip"><LockKeyhole size={14} /><span>Local-only processing. Your documents never leave this device.</span></div>
+      <div className="privacy-strip"><LockKeyhole size={14} /><span>Secure Gemini analysis. Files are not stored by this app.</span></div>
       <div className="recent" id="recent-documents">
         <div className="recent-head">
           <h3 className="recent-title">Recent documents</h3>
@@ -233,7 +236,7 @@ function UploadPanel({
               <div className="recent-item" key={item.id} data-testid={`row-recent-document-${item.id}`}>
                 <button className="recent-item" onClick={() => onSelectRecent(item)} data-testid={`button-open-recent-${item.id}`}>
                   <span className="recent-icon">{item.sourceType === 'image' ? <ImageIcon size={13} /> : <FileText size={13} />}</span>
-                  <span className="recent-info"><span className="recent-name">{item.title}</span><span className="recent-time">{item.isExample ? 'Example document' : 'Saved locally'}</span></span>
+                  <span className="recent-info"><span className="recent-name">{item.title}</span><span className="recent-time">Analyzed with Gemini</span></span>
                   <ChevronRight size={13} color="#aaa49b" />
                 </button>
                 <button className="delete-recent" onClick={() => onDeleteRecent(item.id)} aria-label={`Delete ${item.title}`} data-testid={`button-delete-recent-${item.id}`}><Trash2 size={13} /></button>
@@ -311,8 +314,7 @@ function ResultPanel({
         </div>
       </div>
       <div className="result-body">
-        {result.sourceType === 'image' && <div className="ocr-note" data-testid="status-ocr-fallback"><ScanLine size={14} /><span>OCR-ready flow: this browser did not detect a built-in OCR engine, so the brief uses available file metadata. For exact text, review the image or paste captured text into a document.</span></div>}
-        {result.sourceType === 'pdf' && !result.extractedText && <div className="ocr-note" data-testid="status-pdf-text-fallback"><Info size={14} /><span>No selectable text was found in this PDF. The local fallback kept the file private and created a review-ready brief from its metadata.</span></div>}
+        {result.extractedText && <div className="ocr-note" data-testid="status-analysis-notes"><Info size={14} /><span>{result.extractedText}</span></div>}
         <div data-testid="text-summary">
           <p className="section-label"><Sparkles size={13} /> Summary</p>
           <p className="summary-copy">{result.summary[length]}</p>
@@ -354,23 +356,50 @@ function Home() {
     if (!type) {
       setStatus('error');
       setResult(null);
-      setError('That format is not supported yet. Choose a PDF, PNG, JPG, or WEBP file.');
+      setError('That format is not supported. Choose a PDF, Word, Excel, CSV, or image file.');
       return;
     }
     setStatus('processing');
     setResult(null);
     setError('');
     setCopied(false);
-    const text = await readFileText(file, type);
-    window.setTimeout(() => {
-      const next = makeUploadedResult(file, text, type);
-      const nextRecent = [next, ...recent.filter((item) => item.id !== next.id && item.title !== next.title)];
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('summaryLength', length);
+      const response = await fetch('/api/gemini/analyze', { method: 'POST', body });
+      const payload = await response.json() as {
+        error?: string;
+        document?: { title?: string; fileType?: string };
+        executiveSummary?: string;
+        keyPoints?: Array<{ point: string; source?: string | null }>;
+        improvementSuggestions?: string[];
+        processingNotes?: string[];
+      };
+      if (!response.ok) throw new Error(payload.error || 'Gemini could not analyze this document.');
+      const title = payload.document?.title || file.name.replace(/\.[^/.]+$/, '');
+      const summary = payload.executiveSummary || 'Gemini returned an empty summary for this document.';
+      const points = (payload.keyPoints || []).map((item) => item.source ? `${item.point} (${item.source})` : item.point);
+      const next: SummaryResult = {
+        id: makeId(),
+        title,
+        sourceType: type,
+        meta: `${type.toUpperCase()} · ${Math.max(1, Math.round(file.size / 1024))} KB · Gemini`,
+        summary: { short: summary, medium: summary, long: summary },
+        points: points.length ? points : ['Gemini did not identify separate key points.'],
+        suggestions: payload.improvementSuggestions?.length ? payload.improvementSuggestions : ['Review the source alongside this brief before sharing it.'],
+        extractedText: payload.processingNotes?.join(' ') || '',
+      };
+      const nextRecent = [next, ...recent.filter((item) => item.title !== next.title)];
       setResult(next);
       setRecent(nextRecent);
       storeRecent(nextRecent);
       setStatus('ready');
-      setNotice(type === 'image' ? 'Image ready — OCR status included' : 'Document summarized locally');
-    }, 850);
+      setNotice('Document analyzed by Gemini');
+    } catch (requestError) {
+      setStatus('error');
+      setError(requestError instanceof Error ? requestError.message : 'The document could not be analyzed.');
+    }
   };
 
   const startNew = () => {
@@ -441,7 +470,7 @@ function Home() {
           <Brand compact />
           <div><div className="eyebrow">Local workspace</div><div className="topbar-title">Document summary assistant</div></div>
           <div className="topbar-actions">
-            <button className="icon-button" onClick={() => setNotice('Everything runs locally in your browser')} aria-label="About local processing" data-testid="button-local-info"><CircleHelp size={16} /></button>
+            <button className="icon-button" onClick={() => setNotice('Files are sent securely to Gemini for analysis')} aria-label="About Gemini processing" data-testid="button-local-info"><CircleHelp size={16} /></button>
             <div className="profile-chip"><span>Private mode</span><span className="avatar">KM</span></div>
           </div>
         </header>
@@ -454,7 +483,7 @@ function Home() {
             <UploadPanel status={status} error={error} onFile={handleFile} recent={recent} onSelectRecent={selectRecent} onDeleteRecent={deleteRecent} onClearRecent={clearRecent} />
             <ResultPanel status={status} result={result} length={length} onLength={setLength} copied={copied} onCopy={copyBrief} onDownload={downloadBrief} />
           </div>
-          <div className="footer-note"><LockKeyhole size={12} /> No accounts. No uploads. Just a clearer read.</div>
+           <div className="footer-note"><LockKeyhole size={12} /> Your file is sent securely to Gemini for analysis and is not stored by this app.</div>
         </div>
         {notice && <div style={{ position: 'fixed', bottom: 22, left: '50%', transform: 'translateX(-50%)', background: 'var(--ink)', color: 'var(--paper)', borderRadius: 8, padding: '10px 14px', fontSize: 11, boxShadow: '0 8px 20px rgba(37,41,58,.16)', zIndex: 5 }} role="status" data-testid="status-notification"><Info size={13} style={{ verticalAlign: 'middle', marginRight: 7 }} />{notice}</div>}
       </main>

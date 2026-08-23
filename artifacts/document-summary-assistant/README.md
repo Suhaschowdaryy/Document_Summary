@@ -1,6 +1,6 @@
 # Briefly — Document Summary Assistant
 
-Briefly turns uploaded PDFs and images into a clear, useful document brief. It is designed for technical-assessment review: upload a file, choose how much detail you need, and get a summary, key points, and practical improvement suggestions.
+Briefly turns uploaded PDFs, Word documents, spreadsheets, CSVs, and images into a clear, useful document brief using Gemini. It is designed for technical-assessment review: upload a file, choose how much detail you need, and get a summary, key points, and practical improvement suggestions.
 
 ## Run locally
 
@@ -9,13 +9,13 @@ pnpm install
 pnpm --filter @workspace/document-summary-assistant run dev
 ```
 
-The app runs entirely in the browser. It does not upload documents to a server or require an API key.
+The browser sends the selected file to the server-side Gemini analyzer. Set `GEMINI_API_KEY` as a Replit Secret before running the full pipeline.
 
 ## Approach
 
-PDF files are read in the browser using the platform's available PDF text extraction support, with a graceful fallback when a scanned PDF has no text layer. Image files enter an OCR-ready flow and explain when browser OCR is unavailable rather than pretending the extraction succeeded. Summaries are generated locally with a lightweight heuristic that prioritizes sentence-level content, headings, and repeated terms. Users can switch between short, medium, and long output, copy the brief, download it as text, and reopen recent documents stored in local storage.
+The API accepts a multipart upload, validates the file type and size, and sends the file inline to Gemini 3.6 Flash with a strict JSON analysis prompt. Gemini handles OCR for images and scanned pages, understands Word and spreadsheet structure, and returns summaries, key points, important details, data findings, action items, risks, suggestions, processing notes, and confidence. Users can copy the brief, download it as text, and reopen recent documents stored in local storage.
 
-The interface intentionally keeps the source document local for privacy, provides visible loading and error states, and uses responsive layout behavior for smaller screens.
+The interface provides visible loading and error states, clearly explains the Gemini handoff, and uses responsive layout behavior for smaller screens. The app does not persist uploaded file bytes.
 
 ## Submission checklist
 

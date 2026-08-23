@@ -1,6 +1,6 @@
 # Briefly — Document Summary Assistant
 
-Briefly lets users privately turn PDFs and images into concise summaries, key points, and practical next steps in the browser.
+Briefly lets users send PDFs, Word documents, spreadsheets, CSVs, and images to Gemini for concise summaries, key points, and practical next steps.
 
 ## Run & Operate
 
@@ -28,14 +28,14 @@ Briefly lets users privately turn PDFs and images into concise summaries, key po
 
 ## Architecture decisions
 
-- Document processing stays local to the browser so source files never leave the device.
-- The first version is frontend-only; it does not depend on credentials, a database, or an external AI provider.
+- Uploaded files are analyzed server-side by Gemini so the API key never reaches the browser.
+- The analyzer returns strict structured JSON so the UI can render each document section safely.
 - Local storage is used only for recent-document metadata and generated briefs.
 
 ## Product
 
-- Drag-and-drop or file-picker uploads for PDFs and common image formats.
-- Loading, unsupported-file, no-text, and OCR-availability states.
+- Drag-and-drop or file-picker uploads for PDFs, Word documents, spreadsheets, CSVs, and common image formats.
+- Loading, unsupported-file, size-limit, API-error, and OCR processing states.
 - Short, medium, and long summaries with key points and improvement suggestions.
 - Copy, text download, recent-document reopen, delete, and clear-all actions.
 
