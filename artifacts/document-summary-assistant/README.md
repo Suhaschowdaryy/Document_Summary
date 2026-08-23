@@ -2,14 +2,14 @@
 
 Briefly turns uploaded PDFs, Word documents, spreadsheets, CSVs, and images into a clear, useful document brief using Gemini. It is designed for technical-assessment review: upload a file, choose how much detail you need, and get a summary, key points, and practical improvement suggestions.
 
-## Run locally in Replit
+## Run locally
 
 ```bash
 pnpm install
-pnpm --filter @workspace/document-summary-assistant run dev
+pnpm dlx vercel dev
 ```
 
-The browser sends the selected file to the server-side Gemini analyzer. Set `GEMINI_API_KEY` as a Replit Secret before running the full pipeline.
+Vercel's local runtime serves both the Vite frontend and the `/api` function. Set `GEMINI_API_KEY` in your local environment before running the full pipeline. To work on the frontend only, use `pnpm --filter @workspace/document-summary-assistant run dev`.
 
 ## Deploy to Vercel
 

@@ -1,5 +1,5 @@
 import express, { type Express } from "express";
-import cors from "cors";
+import multer from "multer";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -25,10 +25,26 @@ app.use(
     },
   }),
 );
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (error instanceof multer.MulterError) {
+    const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    res.status(status).json({
+      error: status === 413 ? "The file is too large. Maximum size is 4 MB." : "The uploaded file could not be processed.",
+    });
+    return;
+  }
+
+  if (req.path.startsWith("/api/")) {
+    res.status(500).json({ error: "The request could not be processed." });
+    return;
+  }
+
+  next(error);
+});
 
 export default app;
