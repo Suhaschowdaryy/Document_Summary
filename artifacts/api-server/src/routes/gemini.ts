@@ -1,8 +1,8 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import multer from "multer";
 import { GoogleGenAI } from "@google/genai";
 
-const router: IRouter = Router();
+const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   // Vercel serverless requests are limited to roughly 4.5 MB on Hobby.
