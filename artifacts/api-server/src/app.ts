@@ -1,15 +1,15 @@
-import express, {
-  type ErrorRequestHandler,
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
 const app = express();
+
+type ErrorResponse = {
+  status: (code: number) => ErrorResponse;
+  json: (body: unknown) => void;
+};
 
 app.use(
   pinoHttp({
@@ -35,12 +35,12 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-const errorHandler: ErrorRequestHandler = (
+const errorHandler = (
   error: unknown,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+  req: { url?: string },
+  res: ErrorResponse,
+  next: (error?: unknown) => void,
+): void => {
   if (error instanceof multer.MulterError) {
     const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
     res.status(status).json({
@@ -49,7 +49,7 @@ const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  if (req.path.startsWith("/api/")) {
+  if (req.url?.startsWith("/api/") || req.url === "/api") {
     res.status(500).json({ error: "The request could not be processed." });
     return;
   }
