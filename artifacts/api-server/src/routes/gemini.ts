@@ -5,7 +5,8 @@ import { GoogleGenAI } from "@google/genai";
 const router: IRouter = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  // Vercel serverless requests are limited to roughly 4.5 MB on Hobby.
+  limits: { fileSize: 4 * 1024 * 1024 },
 });
 
 const ANALYSIS_PROMPT = `You are a precise document analysis assistant. Analyze the attached file and return a trustworthy structured brief that can be rendered directly in a web application.

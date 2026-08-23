@@ -25,6 +25,8 @@ Briefly lets users send PDFs, Word documents, spreadsheets, CSVs, and images to 
 - `artifacts/document-summary-assistant/src/App.tsx` — main application experience and local document processing.
 - `artifacts/document-summary-assistant/src/index.css` — visual theme and responsive layout.
 - `artifacts/document-summary-assistant/README.md` — setup, approach, and submission notes.
+- `api/[...route].ts` — Vercel serverless entry point for the Gemini API.
+- `vercel.json` — Vercel build, output, and function settings.
 
 ## Architecture decisions
 

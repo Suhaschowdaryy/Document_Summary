@@ -1,0 +1,11 @@
+{
+  "buildCommand": "pnpm --filter @workspace/document-summary-assistant run build",
+  "outputDirectory": "artifacts/document-summary-assistant/dist/public",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "functions": {
+    "api/[...route].ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}
