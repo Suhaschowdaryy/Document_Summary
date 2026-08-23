@@ -1,4 +1,9 @@
-import express, { type ErrorRequestHandler } from "express";
+import express, {
+  type ErrorRequestHandler,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import router from "./routes/index.js";
@@ -30,7 +35,12 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+const errorHandler: ErrorRequestHandler = (
+  error: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   if (error instanceof multer.MulterError) {
     const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
     res.status(status).json({
