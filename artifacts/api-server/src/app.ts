@@ -1,10 +1,10 @@
-import express, { type Express } from "express";
+import express, { type ErrorRequestHandler } from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
-const app: Express = express();
+const app = express();
 
 app.use(
   pinoHttp({
@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
     res.status(status).json({
@@ -45,6 +45,8 @@ app.use((error: unknown, req: express.Request, res: express.Response, next: expr
   }
 
   next(error);
-});
+};
+
+app.use(errorHandler);
 
 export default app;
