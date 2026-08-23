@@ -92,7 +92,7 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     res.status(503).json({ error: "Gemini is not configured. Add GEMINI_API_KEY to continue." });
     return;
@@ -100,11 +100,12 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
 
   try {
     const ai = new GoogleGenAI({ apiKey });
+    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
     const length = typeof req.body.summaryLength === "string" ? req.body.summaryLength : "medium";
     const userInstruction = typeof req.body.userInstruction === "string" ? req.body.userInstruction : "";
     const prompt = `${ANALYSIS_PROMPT}\n\nRequested summary length: ${length}\nAdditional user instruction: ${userInstruction || "None"}`;
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model,
       contents: [{
         role: "user",
         parts: [
