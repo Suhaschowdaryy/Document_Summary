@@ -3,6 +3,23 @@ import multer from "multer";
 import { GoogleGenAI } from "@google/genai";
 
 const router = Router();
+
+type AnalyzeRequest = {
+  file?: {
+    mimetype: string;
+    originalname: string;
+    buffer: Buffer;
+    size: number;
+  };
+  body: Record<string, unknown>;
+  log: { error: (context: unknown, message: string) => void };
+};
+
+type AnalyzeResponse = {
+  status: (code: number) => AnalyzeResponse;
+  json: (body: unknown) => void;
+};
+
 const upload = multer({
   storage: multer.memoryStorage(),
   // Vercel serverless requests are limited to roughly 4.5 MB on Hobby.
@@ -62,7 +79,7 @@ function inferType(mimeType: string, filename: string) {
   return "unknown";
 }
 
-router.post("/gemini/analyze", upload.single("file"), async (req, res) => {
+router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest, res: AnalyzeResponse) => {
   const file = req.file;
   if (!file) {
     res.status(400).json({ error: "Attach a PDF, Word document, spreadsheet, CSV, or image." });
