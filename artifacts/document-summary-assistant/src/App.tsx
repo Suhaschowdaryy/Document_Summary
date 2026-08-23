@@ -368,14 +368,29 @@ function Home() {
       body.append('file', file);
       body.append('summaryLength', length);
       const response = await fetch('/api/gemini/analyze', { method: 'POST', body });
-      const payload = await response.json() as {
+      const contentType = response.headers.get('content-type') || '';
+      const rawPayload = await response.text();
+      let payload: {
         error?: string;
         document?: { title?: string; fileType?: string };
         executiveSummary?: string;
         keyPoints?: Array<{ point: string; source?: string | null }>;
         improvementSuggestions?: string[];
         processingNotes?: string[];
-      };
+      } = {};
+      if (contentType.includes('application/json') && rawPayload) {
+        try {
+          payload = JSON.parse(rawPayload) as typeof payload;
+        } catch {
+          payload = {};
+        }
+      }
+      if (!response.ok && !payload.error) {
+        const detail = response.status === 404
+          ? 'The analysis API is not available on this deployment.'
+          : `The analysis request failed (HTTP ${response.status}).`;
+        throw new Error(detail);
+      }
       if (!response.ok) throw new Error(payload.error || 'Gemini could not analyze this document.');
       const title = payload.document?.title || file.name.replace(/\.[^/.]+$/, '');
       const summary = payload.executiveSummary || 'Gemini returned an empty summary for this document.';
