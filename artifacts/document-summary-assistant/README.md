@@ -17,6 +17,7 @@ This repository is configured for Vercel with a static Vite frontend and a serve
 
 1. Push the repository to GitHub.
 2. In Vercel, select **Add New → Project**, import the repository, and keep the repository root as the project root.
+   Do not set the Root Directory to `artifacts/document-summary-assistant`; the root must contain both `vercel.json` and `api/[...route].ts`.
 3. Vercel will use the committed `vercel.json` settings:
    - Install command: `pnpm install --frozen-lockfile`
    - Build command: `pnpm --filter @workspace/document-summary-assistant run build`
