@@ -5,8 +5,7 @@
   "functions": {
     "api/[...route].ts": {
       "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "nodejs22.x"
+      "memory": 1024
     }
   },
   "framework": "vite"
