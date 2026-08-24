@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import healthRouter from "./routes/health.js";
@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", healthRouter);
 
-app.use("/api", async (req, res, next) => {
+app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { default: geminiRouter } = await import("./routes/gemini.js");
     return geminiRouter(req, res, next);
