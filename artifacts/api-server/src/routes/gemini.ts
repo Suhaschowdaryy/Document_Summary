@@ -82,19 +82,19 @@ function inferType(mimeType: string, filename: string) {
 router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest, res: AnalyzeResponse) => {
   const file = req.file;
   if (!file) {
-    res.status(400).json({ error: "Attach a PDF, Word document, spreadsheet, CSV, or image." });
+    res.status(400).json({ success: false, error: "Attach a PDF, Word document, spreadsheet, CSV, or image." });
     return;
   }
 
   const fileType = inferType(file.mimetype, file.originalname);
   if (fileType === "unknown") {
-    res.status(400).json({ error: "That file type is not supported." });
+    res.status(400).json({ success: false, error: "That file type is not supported." });
     return;
   }
 
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    res.status(503).json({ error: "Gemini is not configured. Add GEMINI_API_KEY to continue." });
+    res.status(503).json({ success: false, error: "Gemini is not configured. Add GEMINI_API_KEY to continue." });
     return;
   }
 
@@ -118,10 +118,10 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
 
     const text = response.text ?? "";
     const parsed = JSON.parse(text.replace(/^```json\s*|\s*```$/g, "").trim());
-    res.json({ ...parsed, fileName: file.originalname, fileSize: file.size, fileType });
+    res.json({ success: true, ...parsed, fileName: file.originalname, fileSize: file.size, fileType });
   } catch (error) {
     req.log.error({ err: error }, "Gemini document analysis failed");
-    res.status(502).json({ error: "Gemini could not analyze this document. Try a smaller or clearer file." });
+    res.status(502).json({ success: false, error: "Gemini could not analyze this document. Try a smaller or clearer file." });
   }
 });
 

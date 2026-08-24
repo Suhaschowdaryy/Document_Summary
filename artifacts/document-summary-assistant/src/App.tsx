@@ -371,6 +371,7 @@ function Home() {
       const contentType = response.headers.get('content-type') || '';
       const rawPayload = await response.text();
       let payload: {
+        success?: boolean;
         error?: string;
         document?: { title?: string; fileType?: string };
         executiveSummary?: string;
@@ -388,7 +389,9 @@ function Home() {
       if (!response.ok && !payload.error) {
         const detail = response.status === 404
           ? 'The analysis API is not available on this deployment.'
-          : `The analysis request failed (HTTP ${response.status}).`;
+          : response.status === 413
+            ? 'That file is too large. The maximum upload size is 4 MB.'
+            : `The analysis request failed (HTTP ${response.status}).`;
         throw new Error(detail);
       }
       if (!response.ok) throw new Error(payload.error || 'Gemini could not analyze this document.');

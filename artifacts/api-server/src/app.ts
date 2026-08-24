@@ -44,13 +44,14 @@ const errorHandler = (
   if (error instanceof multer.MulterError) {
     const status = error.code === "LIMIT_FILE_SIZE" ? 413 : 400;
     res.status(status).json({
+      success: false,
       error: status === 413 ? "The file is too large. Maximum size is 4 MB." : "The uploaded file could not be processed.",
     });
     return;
   }
 
   if (req.url?.startsWith("/api/") || req.url === "/api") {
-    res.status(500).json({ error: "The request could not be processed." });
+    res.status(500).json({ success: false, error: "The request could not be processed." });
     return;
   }
 

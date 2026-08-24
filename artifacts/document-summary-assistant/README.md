@@ -29,7 +29,7 @@ For local Vercel-style testing, install the Vercel CLI and run `vercel dev` from
 
 ## Approach
 
-The API accepts a multipart upload, validates the file type and size, and sends the file inline to Gemini 3.6 Flash with a strict JSON analysis prompt. Gemini handles OCR for images and scanned pages, understands Word and spreadsheet structure, and returns summaries, key points, important details, data findings, action items, risks, suggestions, processing notes, and confidence. Users can copy the brief, download it as text, and reopen recent documents stored in local storage.
+The API accepts a multipart upload, validates the file type and size, and sends the file inline to Gemini 2.5 Flash with a strict JSON analysis prompt. Gemini handles OCR for images and scanned pages, understands Word and spreadsheet structure, and returns summaries, key points, important details, data findings, action items, risks, suggestions, processing notes, and confidence. Users can copy the brief, download it as text, and reopen recent documents stored in local storage.
 
 The interface provides visible loading and error states, clearly explains the Gemini handoff, and uses responsive layout behavior for smaller screens. The app does not persist uploaded file bytes.
 
