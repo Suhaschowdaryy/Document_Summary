@@ -367,7 +367,10 @@ function Home() {
       const body = new FormData();
       body.append('file', file);
       body.append('summaryLength', length);
-      const response = await fetch('/api/gemini/analyze', { method: 'POST', body });
+      const endpoint = '/api/gemini/analyze';
+      if (import.meta.env.DEV) console.info('[API] Request received by client', { endpoint, fileType: type, fileSize: file.size });
+      const response = await fetch(endpoint, { method: 'POST', body });
+      if (import.meta.env.DEV) console.info('[API] Response received by client', { endpoint, status: response.status });
       const contentType = response.headers.get('content-type') || '';
       const rawPayload = await response.text();
       let payload: {
@@ -389,6 +392,8 @@ function Home() {
       if (!response.ok && !payload.error) {
         const detail = response.status === 404
           ? 'The analysis API is not available on this deployment.'
+          : response.status === 429
+            ? 'Gemini is temporarily rate-limited. Please try again shortly.'
           : response.status === 413
             ? 'That file is too large. The maximum upload size is 4 MB.'
             : `The analysis request failed (HTTP ${response.status}).`;

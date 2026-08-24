@@ -12,7 +12,10 @@ type AnalyzeRequest = {
     size: number;
   };
   body: Record<string, unknown>;
-  log: { error: (context: unknown, message: string) => void };
+  log: {
+    info: (context: unknown, message: string) => void;
+    error: (context: unknown, message: string) => void;
+  };
 };
 
 type AnalyzeResponse = {
@@ -87,12 +90,14 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
   }
 
   const fileType = inferType(file.mimetype, file.originalname);
+  req.log.info({ fileName: file.originalname, fileType, fileSize: file.size }, "Analysis file received");
   if (fileType === "unknown") {
     res.status(400).json({ success: false, error: "That file type is not supported." });
     return;
   }
 
   const apiKey = process.env.GEMINI_API_KEY?.trim();
+  req.log.info({ geminiConfigured: Boolean(apiKey) }, "Gemini configuration checked");
   if (!apiKey) {
     res.status(503).json({ success: false, error: "Gemini is not configured. Add GEMINI_API_KEY to continue." });
     return;
@@ -104,6 +109,7 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
     const length = typeof req.body.summaryLength === "string" ? req.body.summaryLength : "medium";
     const userInstruction = typeof req.body.userInstruction === "string" ? req.body.userInstruction : "";
     const prompt = `${ANALYSIS_PROMPT}\n\nRequested summary length: ${length}\nAdditional user instruction: ${userInstruction || "None"}`;
+    req.log.info({ model, fileType }, "Sending document to Gemini");
     const response = await ai.models.generateContent({
       model,
       contents: [{
@@ -118,10 +124,18 @@ router.post("/gemini/analyze", upload.single("file"), async (req: AnalyzeRequest
 
     const text = response.text ?? "";
     const parsed = JSON.parse(text.replace(/^```json\s*|\s*```$/g, "").trim());
+    req.log.info({ model }, "Gemini response received");
     res.json({ success: true, ...parsed, fileName: file.originalname, fileSize: file.size, fileType });
   } catch (error) {
     req.log.error({ err: error }, "Gemini document analysis failed");
-    res.status(502).json({ success: false, error: "Gemini could not analyze this document. Try a smaller or clearer file." });
+    const status = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number"
+      ? error.status
+      : 502;
+    const responseStatus = status === 429 ? 429 : 502;
+    const message = responseStatus === 429
+      ? "Gemini is rate-limited. Please wait and try again."
+      : "Gemini could not analyze this document. Try a smaller or clearer file.";
+    res.status(responseStatus).json({ success: false, error: message });
   }
 });
 
