@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
-import router from "./routes/index.js";
+import healthRouter from "./routes/health.js";
 import { logger } from "./lib/logger.js";
 
 const app = express();
@@ -33,7 +33,16 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", router);
+app.use("/api", healthRouter);
+
+app.use("/api", async (req, res, next) => {
+  try {
+    const { default: geminiRouter } = await import("./routes/gemini.js");
+    return geminiRouter(req, res, next);
+  } catch (error) {
+    return next(error);
+  }
+});
 
 const errorHandler = (
   error: unknown,
