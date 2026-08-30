@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from "express";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
+import geminiRouter from "./routes/gemini.js";
 import healthRouter from "./routes/health.js";
 import { logger } from "./lib/logger.js";
 
@@ -34,14 +35,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", healthRouter);
+app.use("/api", geminiRouter);
 
-app.use("/api", async (req: Request, res: Response, next: (error?: unknown) => void) => {
-  try {
-    const { default: geminiRouter } = await import("./routes/gemini.js");
-    return geminiRouter(req, res, next);
-  } catch (error) {
-    return next(error);
+app.use("/api", (req: Request, res: Response) => {
+  if (req.method !== "POST" && req.method !== "GET") {
+    res.status(405).json({ success: false, error: `Method ${req.method} is not allowed for this endpoint.` });
+    return;
   }
+
+  res.status(404).json({ success: false, error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
 const errorHandler = (
